@@ -29,6 +29,12 @@ type ProcessConfig struct {
 	Env           []string
 	Cwd           string
 	StderrHandler func(string)
+	MaxBufferSize int
+	// User specifies the username to run the subprocess as.
+	// When set, the subprocess will run with the credentials of the specified user.
+	// This is Unix-specific and requires appropriate permissions (typically root).
+	// When empty, the subprocess runs as the current user.
+	User string
 }
 
 // NewProcess spawns a new Claude Code process.
@@ -45,14 +51,25 @@ func NewProcess(
 		return nil, err
 	}
 
+	// Verify CLI version compatibility before spawning process.
+	// Can be skipped by setting CLAUDE_AGENT_SDK_SKIP_VERSION_CHECK=true
+	if err := checkCLIVersion(executable); err != nil {
+		return nil, err
+	}
+
 	cmd := createCommand(ctx, executable, config)
+
+	// Configure user credentials if specified (Unix-only)
+	if err := configureUserCredential(cmd, config.User); err != nil {
+		return nil, fmt.Errorf(errWrapFormat, ErrUserSwitchFailed, err)
+	}
 
 	pipes, err := createPipes(cmd)
 	if err != nil {
 		return nil, err
 	}
 
-	transport := NewStdioTransport(pipes.stdin, pipes.stdout, pipes.stderr)
+	transport := NewStdioTransport(pipes.stdin, pipes.stdout, pipes.stderr, config.MaxBufferSize)
 
 	if err := cmd.Start(); err != nil {
 		return nil, fmt.Errorf(errWrapFormat, ErrProcessStart, err)
