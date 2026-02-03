@@ -481,8 +481,9 @@ type ContentDelta struct {
 // decodeContentDelta converts raw JSON into a typed delta representation.
 func decodeContentDelta(data []byte) (ContentDelta, error) {
 	var envelope struct {
-		Type string `json:"type"`
-		Text string `json:"text,omitempty"`
+		Type        string `json:"type"`
+		Text        string `json:"text,omitempty"`
+		PartialJson string `json:"partial_Json,omitempty"`
 	}
 	if err := json.Unmarshal(data, &envelope); err != nil {
 		return ContentDelta{}, clauderrs.NewProtocolError(
@@ -495,7 +496,7 @@ func decodeContentDelta(data []byte) (ContentDelta, error) {
 	switch envelope.Type {
 	case "text_delta", "input_json_delta":
 		// "input_json_delta" also carries text payloads for current protocol.
-		if envelope.Text == "" {
+		if envelope.Text == "" && envelope.PartialJson == "" {
 			return ContentDelta{}, clauderrs.NewProtocolError(
 				clauderrs.ErrCodeInvalidMessage,
 				"text delta payload missing text field",
@@ -503,7 +504,9 @@ func decodeContentDelta(data []byte) (ContentDelta, error) {
 			).WithMessageType(envelope.Type)
 		}
 		text := envelope.Text
-
+		if text == "" {
+			text = envelope.PartialJson
+		}
 		return ContentDelta{TextDelta: &text}, nil
 	default:
 		return ContentDelta{}, clauderrs.NewProtocolError(
