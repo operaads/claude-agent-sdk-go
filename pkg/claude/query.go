@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strings"
 	"sync"
 
 	"github.com/connerohnesorge/claude-agent-sdk-go/internal/transport"
@@ -222,6 +223,12 @@ func (q *queryImpl) buildArgs() []string {
 	if q.opts.Settings != "" {
 		args = append(args, "--settings", q.opts.Settings)
 	}
+
+	settingSources := make([]string, 0, len(q.opts.SettingSources))
+	for _, source := range q.opts.SettingSources {
+		settingSources = append(settingSources, string(source))
+	}
+	args = append(args, "--setting-sources", strings.Join(settingSources, ","))
 
 	// Add additional directories
 	for _, dir := range q.opts.AdditionalDirectories {
