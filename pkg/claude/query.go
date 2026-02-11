@@ -228,6 +228,11 @@ func (q *queryImpl) buildArgs() []string {
 		args = append(args, "--add-dir", dir)
 	}
 
+	// Add explicit tool selections
+	for _, tool := range q.opts.Tools {
+		args = append(args, "--tools", tool)
+	}
+
 	// Add allowed tools
 	for _, tool := range q.opts.AllowedTools {
 		args = append(args, "--allowed-tools", tool)

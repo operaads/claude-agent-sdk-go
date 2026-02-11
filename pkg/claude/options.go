@@ -13,6 +13,7 @@ type Options struct {
 
 	// Directory and tool configuration
 	AdditionalDirectories []string
+	Tools                 []string
 	AllowedTools          []string
 	DisallowedTools       []string
 	Cwd                   string
